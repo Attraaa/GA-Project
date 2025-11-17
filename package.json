@@ -1,0 +1,11 @@
+{
+  "name": "ga-project",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/Attraaa/GA-Project.git",
+  "author": "Jeongseop-Shin <tjql7757@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "pixi.js": "^8.14.1"
+  }
+}
