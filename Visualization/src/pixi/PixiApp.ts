@@ -12,8 +12,9 @@ export async function createPixiApp(dom: HTMLElement) {
 
   dom.appendChild(app.canvas);
 
-  const scene = new SceneMain(app);
-  app.stage.addChild(scene.container);
+  const scene = new SceneMain();
+  await scene.load()
+  app.stage.addChild(scene);
 
   return app;
 }
