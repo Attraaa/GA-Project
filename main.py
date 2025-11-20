@@ -143,7 +143,14 @@ class GeneticAlgorithm:
             individual = Individual(gene)
             individual.calculate_fitness()
             self.population.append(individual)#모집단에 추가
-            
+#-----------------------------------------------------------------
+    def eval_population(self):
+        for ind in self.population:
+            ind.calculate_fitness()
+    def select_parent(self,k=5):
+        candidate = np.random.sample(self.population,k)
+        return max(candidate, key=lamda ind: ind.fitness)
+#-----------------------------------------------------------------
         
 
 ga = GeneticAlgorithm(boxes, population_size) 
