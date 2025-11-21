@@ -148,8 +148,36 @@ class GeneticAlgorithm:
         for ind in self.population:
             ind.calculate_fitness()
     def select_parent(self,k=5):
-        candidate = np.random.sample(self.population,k)
-        return max(candidate, key=lamda ind: ind.fitness)
+        candidates = np.random.choice(self.population, size=k, replace=False)
+        return max(candidates, key=lambda ind: ind.fitness)
+    
+
+def swap_mutation(individual, mutation_rate=0.02):
+
+    if np.random.rand() > mutation_rate:
+        return individual
+
+    gene = individual.gene
+    length = len(gene)
+    if length < 2:
+        return individual
+
+    a, b = np.random.choice(length, 2, replace=False)
+    gene[a], gene[b] = gene[b], gene[a]
+
+    return individual
+
+def orderCorssover(parent1:np.ndarray,parent2:np.ndarray):
+    offspring1 = parent1.copy()
+    offspring2 = parent2.copy()
+    size = len(offspring1)
+
+    child
+
+    rows, cols = parent2.shape
+    row = np.random.randint(0,rows)
+    col = np.random.randint(0,cols)
+
 #-----------------------------------------------------------------
         
 
