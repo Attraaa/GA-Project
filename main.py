@@ -1,4 +1,6 @@
+import json
 import numpy as np
+import shutil
 
 # 개쩌는 원리 정리
 # 컨테이너의 높이는 생각하지 않고 일단 width를 정의함 ex) 10
@@ -143,42 +145,7 @@ class GeneticAlgorithm:
             individual = Individual(gene)
             individual.calculate_fitness()
             self.population.append(individual)#모집단에 추가
-#-----------------------------------------------------------------
-    def eval_population(self):
-        for ind in self.population:
-            ind.calculate_fitness()
-    def select_parent(self,k=5):
-        candidates = np.random.choice(self.population, size=k, replace=False)
-        return max(candidates, key=lambda ind: ind.fitness)
-    
-
-def swap_mutation(individual, mutation_rate=0.02):
-
-    if np.random.rand() > mutation_rate:
-        return individual
-
-    gene = individual.gene
-    length = len(gene)
-    if length < 2:
-        return individual
-
-    a, b = np.random.choice(length, 2, replace=False)
-    gene[a], gene[b] = gene[b], gene[a]
-
-    return individual
-
-def orderCorssover(parent1:np.ndarray,parent2:np.ndarray):
-    offspring1 = parent1.copy()
-    offspring2 = parent2.copy()
-    size = len(offspring1)
-
-    child
-
-    rows, cols = parent2.shape
-    row = np.random.randint(0,rows)
-    col = np.random.randint(0,cols)
-
-#-----------------------------------------------------------------
+            
         
 
 ga = GeneticAlgorithm(boxes, population_size) 
@@ -191,6 +158,57 @@ for i in range(0, 100):
 
 best_individual = max(ga.population, key=lambda ind: ind.fitness)
 print(f"최고 점수: {best_individual.fitness}")
+
+
+# 시각화용 JSON 생성 함수
+def convert_json(individual):
+    # Individual의 gene을 Skyline 배치로 변환하여 JSON 리스트 생성
+    container = np.zeros(container_width)
+    placements = []
+
+    for (original_box, is_rotated) in individual.gene:
+        box = original_box.rotated() if is_rotated else original_box
+
+        w = box.width
+        h = box.height
+
+        best_x = None
+        min_top = float('inf')
+
+        for x in range(container_width - w + 1):
+            base = container[x:x+w].max()
+            top = base + h
+
+            if top < min_top:
+                min_top = top
+                best_x = x
+
+        container[best_x:best_x+w] = min_top
+
+        placements.append({
+            "id": box.id,
+            "x": int(best_x),
+            "y": int(min_top - h),
+            "width": int(w),
+            "height": int(h)
+        })
+
+    return placements
+
+
+# best_individual을 JSON으로 변환
+best_layout = convert_json(best_individual)
+
+# JSON을 프로젝트 루트에 저장
+json_path = "placements.json"
+with open(json_path, "w") as f:
+    json.dump(best_layout, f, indent=2)
+
+print("시각화용 placements.json 생성 완료 →", json_path)
+
+# 자동으로 Visualization/public/으로 복사
+shutil.copyfile(json_path, "Visualization/public/placements.json")
+print("Visualization/public/placements.json 으로 자동 복사 완료")
 
 
 # TODO:
