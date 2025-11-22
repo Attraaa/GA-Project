@@ -112,6 +112,13 @@ class Individual:
         self.fitness = (1.0 / penalty)*10000000
 
         self.wasted_space =  self.area_sum - total_box_area
+#-----------------------------------------------------------------------
+    #copy함수 생성. 독립개체  생성
+    def copy(self):
+        new_gene = [(box, rot) for (box, rot) in self.gene]
+        return Individual(new_gene)
+#-----------------------------------------------------------------------
+    
 
 
 
@@ -152,32 +159,75 @@ class GeneticAlgorithm:
         return max(candidates, key=lambda ind: ind.fitness)
     
 
-def swap_mutation(individual, mutation_rate=0.02):
+    def swap_mutation(individual, mutation_rate=0.02):
 
-    if np.random.rand() > mutation_rate:
+        if np.random.rand() > mutation_rate:
+            return individual
+
+        gene = individual.gene
+        length = len(gene)
+        if length < 2:
+            return individual
+
+        a, b = np.random.choice(length, 2, replace=False)
+        gene[a], gene[b] = gene[b], gene[a]
+
         return individual
 
-    gene = individual.gene
-    length = len(gene)
-    if length < 2:
-        return individual
+    def orderCrossover(parent1:Individual,parent2:Individual):
+        offspring1 = parent1.copy()
+        offspring2 = parent2.copy()
+        size = len(offspring1.gene)
 
-    a, b = np.random.choice(length, 2, replace=False)
-    gene[a], gene[b] = gene[b], gene[a]
+        child = [None]*size
+        start, end = sorted(np.random.choice(size, 2, replace=False))
 
-    return individual
+        child[start:end+1] = offspring1[start:end+1]
 
-def orderCorssover(parent1:np.ndarray,parent2:np.ndarray):
-    offspring1 = parent1.copy()
-    offspring2 = parent2.copy()
-    size = len(offspring1)
+        pos = (end + 1) % size
+        for item in offspring2:
+            if item not in child:
+                child[pos] = item
+                pos = (pos + 1) % size
 
-    child
+        offspring = parent1.copy()
+        offspring.gene = child
+        return offspring
 
-    rows, cols = parent2.shape
-    row = np.random.randint(0,rows)
-    col = np.random.randint(0,cols)
+    #엘리트 뽑을때 copy사용해야함
+    def elitism_selection(population, num_individuals):
+        individuals = sorted(population, key=lambda ind: ind.fitness, reverse=True)
+        return individuals[:num_individuals]
 
+    def tournament_selection(population, num_individuals, tournament_size=5):
+        selected = []
+        pop_size = len(population)
+
+        for _ in range(num_individuals):
+            candidates = np.random.choice(population, size=min(tournament_size, pop_size), replace=False)
+            best = max(candidates, key=lambda ind: ind.fitness)
+            selected.append(best)
+
+        return selected
+    def evolve(self, elite_count=5, tournament_size=5, mutation_rate=0.02):
+            new_population = []
+
+            elites = self.elitism_selection(self.population, elite_count)
+            new_population.extend([e.copy() for e in elites])
+
+            while len(new_population) < self.pop_size:
+                p1 = self.tournament_selection(self.population, 1, tournament_size)[0]
+                p2 = self.tournament_selection(self.population, 1, tournament_size)[0]
+
+                child = self.orderCrossover(p1, p2)
+
+                if np.random.rand() < mutation_rate:
+                    self.swap_mutation(child, mutation_rate)
+
+                child.calculate_fitness()
+                new_population.append(child)
+
+            self.population = new_population
 #-----------------------------------------------------------------
         
 
