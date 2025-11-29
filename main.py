@@ -54,7 +54,7 @@ population_size = 1000
 # parents = 50
 
 # 세대 수
-generation_count = 3
+generation_count = 50
 
 # 돌연변이 확률
 mutation_rate = 0.05
@@ -360,6 +360,6 @@ if __name__ == "__main__":
 
     final_best = max(ga.population, key=lambda ind: ind.fitness)
     print(f"최종 최적 높이: {final_best.max_height}")
-    print(f"낭비된 공간: {len(final_best.wasted_space)}")
+    print(f"낭비된 공간: {final_best.wasted_space}")
     
 # TODO:
