@@ -1,4 +1,6 @@
 import numpy as np
+import json
+import os
 
 # 개쩌는 원리 정리
 # 컨테이너의 높이는 생각하지 않고 일단 width를 정의함 ex) 10
@@ -30,28 +32,32 @@ import numpy as np
 
 
 #####################################config#####################################
-data_folder = 'weights'
+result_folder = 'results'
+os.makedirs(result_folder, exist_ok=True)
 
-container_width = 10  # 컨테이너 너비
+container_width = 25  # 컨테이너 너비
 
 # 박스 가로 세로 (연구소아님) 개수 딕셔너리로 만들기
 boxes = [
-    {"w": 2, "h": 3, "count": 3},
-    {"w": 2, "h": 4, "count": 2},
-    {"w": 3, "h": 3, "count": 8}
+    {"w": 2, "h": 3, "count": 7},
+    {"w": 2, "h": 4, "count": 9},
+    {"w": 3, "h": 3, "count": 8},
+    {"w": 4, "h": 4, "count": 7},
+    {"w": 5, "h": 5, "count": 9},
+    {"w": 6, "h": 6, "count": 6},
 ]
 
 # 모집단 크기
-population_size = 100000
+population_size = 1000
 
 #부모 후보 수
 # parents = 50
 
 # 세대 수
-generation_count = 50
+generation_count = 3
 
 # 돌연변이 확률
-mutation_rate = 0.02
+mutation_rate = 0.05
 
 #####################################config#####################################
 
@@ -85,6 +91,7 @@ class Individual:
         self.area_sum=0
         self.max_height = 0
         self.wasted_space = 0
+
 
     def calculate_fitness(self):
         container = np.zeros(container_width)
@@ -123,37 +130,43 @@ class Individual:
         self.max_height = np.max(container)
         self.area_sum = np.sum(container)
 
-        penalty = (self.max_height * 1000000) + self.area_sum
-        self.fitness = (1.0 / penalty)*10000000
+        penalty = (self.max_height * 100) + self.area_sum
+        self.fitness = (1.0 / penalty)*10000
 
         self.wasted_space =  self.area_sum - total_box_area
-#?
-#-----------------------------------------------------------------------
-    #copy함수 생성. 독립개체  생성
-    def copy(self):
-        new_gene = [(box, rot) for (box, rot) in self.gene]
-        return Individual(new_gene)
-#-----------------------------------------------------------------------
 
+        # Individual 클래스 내부 메서드로 추가
+
+    def copy(self):
+        # 유전자 리스트를 슬라이싱[:]해서 새로운 리스트 객체로 만듦 (깊은 복사 효과)
+        new_gene = self.gene[:]
+        new_ind = Individual(new_gene)
+
+        # 계산된 값들도 그대로 복사
+        new_ind.fitness = self.fitness
+        new_ind.area_sum = self.area_sum
+        new_ind.max_height = self.max_height
+        new_ind.wasted_space = self.wasted_space
+        return new_ind
 
 
 
 
 class GeneticAlgorithm:
-    def __init__(self, box_data_list, pop_size=population_size, mutation_rate=mutation_rate):
+    def __init__(self, box_data_list, pop_size=population_size, _mutation_rate = mutation_rate):
         self.pop_size = pop_size
-        self.mutation_rate = mutation_rate
+        self.mutation_rate = _mutation_rate
         self.base_boxes = []
-        self.population = [] 
-        
+        self.population = []
+
         current_id = 0
         for data in box_data_list:
             for _ in range(data["count"]):
                 new_box = Box(current_id, data["w"], data["h"])
                 self.base_boxes.append(new_box)
                 current_id += 1
-        
-        
+
+
     def init_population(self):
         for i in range(population_size):
             gene = [] #박스 객체랑 순서 저장
@@ -171,7 +184,7 @@ class GeneticAlgorithm:
     # def select_parent(self,parents):
     #     candidates = np.random.choice(self.population, size=parents, replace=False)
     #     return max(candidates, key=lambda ind: ind.fitness) #후보 중 가장 우수한 개체 하나만
-    
+
     def swap_mutation(self, individual):
 
         if np.random.random() > self.mutation_rate:
@@ -207,17 +220,17 @@ class GeneticAlgorithm:
         current_idx = 0
         for gene_item in parent2.gene:
             box_id = gene_item[0].id
-            
+
             if box_id in copied_ids:
                 continue
-            
+
             while child_gene[current_idx] is not None:
                 current_idx += 1
-            
+
             child_gene[current_idx] = gene_item
-        
+
         return Individual(child_gene)
-    
+
     #상위 num_individuals개 만큼 뽑기
     def elitism_selection(self, num_individuals):
         individuals = sorted(self.population, key=lambda ind: ind.fitness, reverse=True)
@@ -233,52 +246,120 @@ class GeneticAlgorithm:
             selected.append(best)
 
         return selected
-    
+
     def evolve(self, elite_count=5, tournament_size=5):
-            new_population = []
 
-            elites = self.elitism_selection(self.population, elite_count)
-            new_population.extend([e.copy() for e in elites])
+        next_generation = []
 
-            while len(new_population) < self.pop_size:
-                p1 = self.tournament_selection(1, tournament_size)[0]
-                p2 = self.tournament_selection(1, tournament_size)[0]
+        elites = self.elitism_selection(elite_count)
 
-                child = self.orderCrossover(p1, p2)
 
-                self.swap_mutation(child, self.mutation_rate)
+        for elite in elites:
+            next_generation.append(elite.copy())
 
-                child.calculate_fitness()
-                new_population.append(child)
 
-            self.population = new_population
-#-----------------------------------------------------------------
+        while len(next_generation) < self.pop_size:
+            # (1) 부모 선택 (Selection): 토너먼트 방식으로 아빠, 엄마 선정
+            parent1 = self.tournament_selection(1, tournament_size)[0]
+            parent2 = self.tournament_selection(1, tournament_size)[0]
+
+            child = self.order_crossover(parent1, parent2)
+            self.swap_mutation(child)
+            child.calculate_fitness()
+
+            next_generation.append(child)
+
+
+        self.population = next_generation
+
+
+#나중에 한번 봐야할듯 시각화
+def get_placement_info(individual):
+    container = np.zeros(container_width)
+    placements = []  # {id, x, y, w, h, rotated}
+
+    for (original_box, is_rotated) in individual.gene:
+        box = original_box.rotated() if is_rotated else original_box
+        box_w, box_h = box.width, box.height
+
+        best_x = -1
+        min_top_y = float('inf')
+        base_y_at_best_x = 0
+
+        for x in range(container_width - box_w + 1):
+            base_y = np.max(container[x: x + box_w])
+            current_top_y = base_y + box_h
+
+            if current_top_y < min_top_y:
+                min_top_y = current_top_y
+                best_x = x
+                base_y_at_best_x = base_y 
+
+        if best_x != -1:
+            container[best_x: best_x + box_w] = min_top_y
+
+            placements.append({
+                "id": original_box.id,
+                "x": int(best_x),
+                "y": int(base_y_at_best_x),  # 바닥 높이
+                "w": int(box_w),
+                "h": int(box_h),
+                "is_rotated": bool(is_rotated)
+            })
+
+    return placements
+
+if __name__ == "__main__":
+    print(f"프로젝트 시작: 총 {len(boxes)} 종류의 박스 적재 최적화")
+    print(f"설정: 세대 수={generation_count}, 인구 수={population_size}, 변이율={mutation_rate}")
+
+    ga = GeneticAlgorithm(boxes)
+    ga.init_population()
+
+    initial_best = max(ga.population, key=lambda ind: ind.fitness)
+    print(f"\n[초기 상태] 최고 높이: {initial_best.max_height}, 적합도: {initial_best.fitness:.4f}")
+
+    for i in range(generation_count):
+
+        ga.evolve(elite_count=5, tournament_size=5)
+
+        best_individual = max(ga.population, key=lambda ind: ind.fitness)
+
+
+        #JSON 저장~
+        placements = get_placement_info(best_individual)
+
+        json_data = {
+            "generation": i + 1,
+            "fitness": float(best_individual.fitness),
+            "max_height": float(best_individual.max_height),
+            "wasted_space": float(best_individual.wasted_space),
+            "container_width": container_width,
+            "placements": placements
+        }
+
+
+        file_path = os.path.join(result_folder, f'gen_{i + 1}.json')
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(json_data, f, indent=4)
+
+
+
+        print(f"\n========== {i + 1} 세대 ==========")
+        print("최고 유전자")
+        print(f"적합도 점수 : {best_individual.fitness:.8f}")  # 소수점 8자리까지 보기
+        print(f"높이: {best_individual.max_height}")
+        print(f"쌓은 면적 합(빈공간 포함, 천장빈공간 미포함): {best_individual.area_sum}")
+        print(f"낭비된 공간 : {best_individual.wasted_space}")
+
         
+        if best_individual.wasted_space == 0:
+            print("\n최적해 발견.")
+            break
+    print("\n--- 결과 ---")
 
-ga = GeneticAlgorithm(boxes, population_size) 
-ga.init_population()
-print(f"생성된 개체 수: {len(ga.population)}") 
-#10개 미리보기
-for i in range(0, 100):
-    print(f"{i} 번째 유전자 점수: {ga.population[i].fitness}")
-    print(f"    최대 높이: {ga.population[i].max_height}, 쌓은 면적 합(빈공간 포함, 천장빈공간 미포함): {ga.population[i].area_sum}, 낭비된 공간: {ga.population[i].wasted_space}")
-
-best_individual = max(ga.population, key=lambda ind: ind.fitness)
-
-print("\n최고 유전자")
-print(f"적합도 점수 : {best_individual.fitness}")
-print(f"높이: {best_individual.max_height}")
-print(f"쌓은 면적 합(빈공간 포함, 천장빈공간 미포함): {best_individual.area_sum}")
-print(f"낭비된 공간 : {best_individual.wasted_space}")
-
-
+    final_best = max(ga.population, key=lambda ind: ind.fitness)
+    print(f"최종 최적 높이: {final_best.max_height}")
+    print(f"낭비된 공간: {len(final_best.wasted_space)}")
+    
 # TODO:
-# json 저장 (세대별)
-
-# master_box_list = []
-# current_id = 0
-# for i in boxes:
-#     for j in range(i["count"]):
-#         new_box = Box(current_id, i["w"], i["h"])
-#         master_box_list.append(new_box)
-#         current_id += 1
