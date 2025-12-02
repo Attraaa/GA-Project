@@ -1,22 +1,36 @@
 import { Container, Graphics } from "pixi.js";
 
 export class Box extends Container {
-  async init() {
-    this.pivot.set(-(window.innerWidth / 2), -(window.innerHeight / 2));
-    const g = new Graphics();
-    g.rect(0, 3, 750, 1073);
-    g.stroke({ color: "#ff0000", width: 6 });
-    g.pivot.set(g.width / 2, g.height / 2);
-    g.eventMode = "static";
-    g.cursor = "pointer";
+  w: number;
+  h: number;
+  positionX: number;
+  positionY: number;
 
-    g.on("pointerup", () => {
-      console.log("박스 클릭됨");
-      console.log(g.width, g.height);
-    });
+  constructor(w: number, h: number, px: number, py: number) {
+    super();
+    this.w = w;
+    this.h = h;
+    this.positionX = px;
+    this.positionY = py;
+  }
+
+  init() {
+    const g = new Graphics();
+
+    g.rect(0, 0, this.w, this.h);
+    g.fill({ color: 0x1e90ff, alpha: 0.55 });
+    g.stroke({ color: 0xffffff, width: 2 });
+
+    this.x = this.positionX;
+    this.y = this.positionY;
+
     this.addChild(g);
-    //박스에서 박스를 담을 큰 틀 만들기
-    //패키지에서 담을 박스 갯수및 크기 정하기
-    //쌓는 코드는 박스에서 패키지에서 다른 클래스 하나 따로 빼야할지????
+
+    // 클릭 테스트
+    this.eventMode = "static";
+    this.cursor = "pointer";
+    this.on("pointerup", () => {
+      console.log("박스 클릭")
+    });
   }
 }

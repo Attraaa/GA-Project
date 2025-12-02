@@ -48,13 +48,13 @@ boxes = [
 ]
 
 # 모집단 크기
-population_size = 1000
+population_size = 1500
 
 #부모 후보 수
 # parents = 50
 
 # 세대 수
-generation_count = 50
+generation_count = 1000
 
 # 돌연변이 확률
 mutation_rate = 0.05
