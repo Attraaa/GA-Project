@@ -10,7 +10,7 @@ export class SceneMain extends Container {
   // 중요!!!!!!!!!!!!!!!!!!!!
   // results 폴더 무조건 public 으로 넣어야됨
   async load() {
-    const data = await this.loadJSON(59); //여기 괄호에 제이슨 파일 gen 숫자 넣으면 됨 ㅇㅇ
+    const data = await this.loadJSON(1); //여기 괄호에 제이슨 파일 gen 숫자 넣으면 됨 ㅇㅇ
     //data.placement[] 배열로 넘어옴.
     console.log(data);
     this.mInfo = data;
@@ -37,12 +37,17 @@ export class SceneMain extends Container {
       let boxWidth = info.w;
       let boxHeight = info.h;
 
-      if (info.is_rotated) [boxWidth, boxHeight] = [boxHeight, boxWidth];
+      if (info.is_rotated == true) {
+        let temp = 0;
+        temp = boxWidth;
+        boxWidth = boxHeight;
+        boxHeight = boxWidth;
+      }
 
       const posX = info.x * scale;
       const posY = info.y * scale;
 
-      const box = new Box(boxWidth * scale, boxHeight * scale, posX, posY);
+      const box = new Box(boxWidth * scale, boxHeight * scale, posX, posY, info);
       box.init();
       this.addChild(box);
     }
