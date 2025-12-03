@@ -10,7 +10,7 @@ export class SceneMain extends Container {
   // 중요!!!!!!!!!!!!!!!!!!!!
   // results 폴더 무조건 public 으로 넣어야됨
   async load() {
-    const data = await this.loadJSON(1); //여기 괄호에 제이슨 파일 gen 숫자 넣으면 됨 ㅇㅇ
+    const data = await this.loadJSON(59); //여기 괄호에 제이슨 파일 gen 숫자 넣으면 됨 ㅇㅇ
     //data.placement[] 배열로 넘어옴.
     console.log(data);
     this.mInfo = data;
