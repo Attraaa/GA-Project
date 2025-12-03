@@ -35,7 +35,6 @@ export class SceneMain extends Container {
     let boxWidth = info.w;
     let boxHeight = info.h;
 
-    // if (info.is_rotated) [boxWidth, boxHeight] = [boxHeight, boxWidth];
     if(info.is_rotated == true){
       let temp = 0
       temp = boxWidth
@@ -46,7 +45,7 @@ export class SceneMain extends Container {
     const posX = info.x * scale;
     const posY = info.y * scale;
 
-    const box = new Box(boxWidth * scale, boxHeight * scale, posX, posY);
+    const box = new Box(boxWidth * scale, boxHeight * scale, posX, posY,info);
     box.init();
     this.addChild(box);
   }

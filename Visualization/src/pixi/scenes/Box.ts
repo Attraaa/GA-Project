@@ -5,13 +5,15 @@ export class Box extends Container {
   h: number;
   positionX: number;
   positionY: number;
+  mInfo!: any
 
-  constructor(w: number, h: number, px: number, py: number) {
+  constructor(w: number, h: number, px: number, py: number,info:any) {
     super();
     this.w = w;
     this.h = h;
     this.positionX = px;
     this.positionY = py;
+    this.mInfo = info
   }
 
   init() {
@@ -30,7 +32,11 @@ export class Box extends Container {
     this.eventMode = "static";
     this.cursor = "pointer";
     this.on("pointerup", () => {
-      console.log("박스 클릭")
+      console.log("클릭된 박스 GEN: ",this.mInfo.id)
+      console.log("클릭된 박스 W: ",this.mInfo.w,", H: ",this.mInfo.h)
+      console.log("클릭된 박스 xPos: ",this.mInfo.x,", yPos: ",this.mInfo.y)
+      console.log("회전 유무: ",this.mInfo.is_rotated)
+      console.log("=======================================================")
     });
   }
 }
