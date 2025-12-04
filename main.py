@@ -247,12 +247,30 @@ class GeneticAlgorithm:
 
         return selected
 
+    #population size만큼 반복없이 그냥 완전 랜덤 (init이랑 반복만 없지 거의 중복이라 비효율인데 그냥 일단 임시로)
+    def create_random_individual(self):
+        gene = []
+        boxes_copy = self.base_boxes.copy()
+        np.random.shuffle(boxes_copy)
+
+        for box in boxes_copy:
+            is_rotated = np.random.choice([True, False])
+            gene.append((box, is_rotated))
+
+        individual = Individual(gene)
+        individual.calculate_fitness()
+        return individual
+
     def evolve(self, elite_count=5, tournament_size=5):
 
         next_generation = []
 
         elites = self.elitism_selection(elite_count)
 
+        #로컬미니멈을 빠져나가기 위해 모집단의 10%를 랜덤으로 넣어봤음 딱히 효과가 있는거같지는...
+        random_ind = int(self.pop_size * 0.2)
+        for _ in range(random_ind):
+            next_generation.append(self.create_random_individual())
 
         for elite in elites:
             next_generation.append(elite.copy())
@@ -273,7 +291,6 @@ class GeneticAlgorithm:
         self.population = next_generation
 
 
-#나중에 한번 봐야할듯 시각화
 def get_placement_info(individual):
     container = np.zeros(container_width)
     placements = []  # {id, x, y, w, h, rotated}
