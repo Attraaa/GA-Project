@@ -19,6 +19,7 @@ import os
 # [4-4 4-4, 4-4, 4-4, 4-4, 4-4, 4-3, 4-3, 4-3, 4-0] vs [4-4, 4-3, 4-3, 4-3, 4-3, 4-3, 4-3, 4-3, 4-3, 4-0]
 # [0, 0, 0, 0, 0, 0, 1, 1, 1, 4] = 7  vs [0, 1, 1, 1, 1, 1, 1, 1, 1, 4] = 12
 # 이런식으로 후자를 점수를 더 높게 주면 될 것 같음
+# 12.11추가)참고로 위의 방법으로 안했음.
 
 # 로직 고민하다가 이게 맞나 싶어서 일단 정리해봤는데 틀린점 있으면 말좀 (톡에 보내준 이미지 참고)
 
@@ -29,6 +30,22 @@ import os
 # https://tibyte.kr/239/ 이 글이 도움이 될 듯
 
 
+
+
+
+
+############## 12.11추가 ################
+#
+# 당연하지만 엘리티즘을 빼도 잘 동작함.
+# 근데 최적해 접근 속도는 느림 (평균 100세대 언저리?에서 찾는듯 // 엘리티즘 있으면 운좋으면 50세대에 찾고 운없으면 50세대에 로컬미니멈빠져 죽음)
+# 따라서 밑에 evolve에 주석 참고하고 필요에 따라서 주석처리 하면서 테스트하면 굿
+# 초반에만 엘리티즘을 넣고 후반에 빼는거도 방법일듯함
+#
+#
+# 일단 완전랜덤개체 섞는거는 주석처리 했음 별 도움 안되는거같아서
+# 그리고 박스 크기와 너비에 대한 예외처리같이 모자란 부분도 있음. 근데 프로덕션 환경도 아닌데 뭐 알아서 조심해서 넣어라..
+#
+###########################################
 
 
 #####################################config#####################################
@@ -50,14 +67,14 @@ boxes = [
 # 모집단 크기
 population_size = 1500
 
-#부모 후보 수
-# parents = 50
-
 # 세대 수
 generation_count = 1000
 
 # 돌연변이 확률
 mutation_rate = 0.05
+
+# 높이 가중치 (너비따라서 알아서 조정할 것)
+HEIGHT_WEIGHT = 100
 
 #####################################config#####################################
 
@@ -130,7 +147,8 @@ class Individual:
         self.max_height = np.max(container)
         self.area_sum = np.sum(container)
 
-        penalty = (self.max_height * 100) + self.area_sum
+        #높이가 많이 중요하니까 더 큰 값 곱해도 됨. 너무 작은값 넣으면 너비 넓을때 빈공간이 더 중요해지는 역전의 상황이 올 수도 있음 그럼 학습 망함 ㅅㄱ
+        penalty = (self.max_height * HEIGHT_WEIGHT) + self.area_sum
         self.fitness = (1.0 / penalty)*10000
 
         self.wasted_space =  self.area_sum - total_box_area
@@ -265,19 +283,19 @@ class GeneticAlgorithm:
 
         next_generation = []
 
-        elites = self.elitism_selection(elite_count)
 
-        #로컬미니멈을 빠져나가기 위해 모집단의 10%를 랜덤으로 넣어봤음 딱히 효과가 있는거같지는...
-        random_ind = int(self.pop_size * 0.2)
-        for _ in range(random_ind):
-            next_generation.append(self.create_random_individual())
+        #로컬미니멈을 빠져나가기 위해 모집단의 5%를 랜덤으로 넣어봤음 딱히 효과가 있는거같지는... 그냥 주석처리함
+        # random_ind = int(self.pop_size * 0.05)
+        # for _ in range(random_ind):
+        #     next_generation.append(self.create_random_individual())
 
-        for elite in elites:
-            next_generation.append(elite.copy())
+        #엘리티즘 없애고 테스트 하고싶으면 밑에 세 줄 주석처리
+        # elites = self.elitism_selection(elite_count)
+        # for elite in elites:
+        #     next_generation.append(elite.copy())
 
 
         while len(next_generation) < self.pop_size:
-            # (1) 부모 선택 (Selection): 토너먼트 방식으로 아빠, 엄마 선정
             parent1 = self.tournament_selection(1, tournament_size)[0]
             parent2 = self.tournament_selection(1, tournament_size)[0]
 
@@ -369,7 +387,11 @@ if __name__ == "__main__":
         print(f"쌓은 면적 합(빈공간 포함, 천장빈공간 미포함): {best_individual.area_sum}")
         print(f"낭비된 공간 : {best_individual.wasted_space}")
 
-        
+        # 이거 하나 알아야함 낭비된 공간이 0이라는게 가장 높이가 낮은 해를 의미하지 않음(가장 높은 적합도는 아님)
+        # 근데 왜 이렇게 했냐면 낭비된 공간이 0인 해가 없을 수도 있고
+        # 어지간하면 (정말 길쭉한 박스가 서있다던가 그런경우가 아니라면) 낭비된 공간이 0인 해가 최적해에 매우 근접할 가능성이 높음
+        # 왜냐? 그 정도로 높은 유전자는 빈공간이 0이 아니라면 초반에 웬만하면 죽고
+        # 박스가 몇 개 없어서 경우의 수가 적으면 정말 우연히 저런 이상한 케이스가 쉽게 나올 수도 있지만 그 정도로 박스가 적으면 그냥 사람한테 시켜라 제발
         if best_individual.wasted_space == 0:
             print("\n최적해 발견.")
             break
